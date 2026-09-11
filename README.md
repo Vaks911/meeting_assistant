@@ -22,18 +22,18 @@ Production-ready сервис для **автоматической транск
 
 ```mermaid
 flowchart LR
-    C[Клиент] -->|POST /upload/audio| API[FastAPI]
-    API -->|meeting_id| C
-    C <-->|WebSocket /ws/{meeting_id}| API
+    C["Клиент"] -->|"POST /upload/audio"| API["FastAPI"]
+    API -->|"meeting_id"| C
+    C <-->|"WS /ws/{meeting_id}"| API
 
-    API -->|transcription.requests| K[(Kafka)]
-    K -->|transcription.requests| W1[Worker-1: Whisper tiny]
-    W1 -->|summarization.requests| K
-    K -->|summarization.requests| W2[Worker-2: GigaChat + Pydantic]
+    API -->|"transcription.requests"| K["Kafka"]
+    K -->|"transcription.requests"| W1["Worker-1: Whisper tiny"]
+    W1 -->|"summarization.requests"| K
+    K -->|"summarization.requests"| W2["Worker-2: GigaChat + Pydantic"]
 
-    W1 -->|progress| R[(Redis Pub/Sub)]
-    W2 -->|result| DB[(PostgreSQL)]
-    W2 -->|done| R
+    W1 -->|"progress"| R["Redis Pub/Sub"]
+    W2 -->|"result"| DB["PostgreSQL"]
+    W2 -->|"done"| R
     R --> API
     API --> C
 ```
