@@ -1,0 +1,20 @@
+# Лёгкий образ ТОЛЬКО для worker_summarize (GigaChat).
+# Не устанавливает build-essential, ffmpeg и faster-whisper,
+# поэтому собирается за 1-2 минуты вместо 10-15.
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Копируем зависимости отдельно, чтобы кэшировать слой при изменениях кода
+COPY requirements-summarize.txt .
+RUN pip install --no-cache-dir -r requirements-summarize.txt
+
+# Копируем только код, который реально нужен этому воркеру
+COPY app ./app
+COPY worker_summarize ./worker_summarize
+
+# Общая папка для аудио (монтируется как volume)
+RUN mkdir -p /app/uploads
+
+# Команда запуска задаётся в docker-compose.yaml:
+# python -u -m worker_summarize.consumer

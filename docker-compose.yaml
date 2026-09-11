@@ -1,0 +1,129 @@
+services:
+  # ==========================
+  # 1. ZOOKEEPER — координатор Kafka
+  # ==========================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2182:2181"
+
+  # ==========================
+  # 2. KAFKA — брокер сообщений
+  # ==========================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9093:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:29092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==========================
+  # 3. POSTGRESQL — база данных
+  # ==========================
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: meetings
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # ==========================
+  # 4. REDIS — Pub/Sub и кэш
+  # ==========================
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+  # ==========================
+  # 5. API — FastAPI
+  # ==========================
+  api:
+    build: .
+    container_name: meeting_api
+    ports:
+      - "8011:8011"
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - DATABASE_URL=postgresql://user:password@db/meetings
+      - REDIS_HOST=redis
+      - GIGACHAT_CREDENTIALS=${GIGACHAT_CREDENTIALS}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    volumes:
+      - ./uploads:/app/uploads
+
+  # ==========================
+  # 6. WORKER_TRANSCRIBE — Whisper
+  # ==========================
+  worker_transcribe:
+    build: .
+    container_name: worker_transcribe
+    command: python -u -m worker_transcribe.consumer
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - DATABASE_URL=postgresql://user:password@db/meetings
+      - REDIS_HOST=redis
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    restart: on-failure
+    volumes:
+      - ./uploads:/app/uploads
+
+  # ==========================
+  # 7. WORKER_SUMMARIZE — GigaChat
+  # ==========================
+  worker_summarize:
+    build:
+      context: .
+      dockerfile: Dockerfile.summarize
+    container_name: worker_summarize
+    command: python -u -m worker_summarize.consumer
+    environment:
+      - KAFKA_BROKER=kafka:29092
+      - DATABASE_URL=postgresql://user:password@db/meetings
+      - REDIS_HOST=redis
+      - GIGACHAT_CREDENTIALS=${GIGACHAT_CREDENTIALS}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    restart: on-failure
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  pgdata:

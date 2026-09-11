@@ -1,0 +1,11 @@
+# Зависимости ТОЛЬКО для worker_summarize (GigaChat).
+# Намеренно БЕЗ faster-whisper, ffmpeg, fastapi, uvicorn, websockets —
+# они нужны API и worker_transcribe, но не нужны суммаризатору.
+confluent-kafka
+sqlalchemy
+psycopg2-binary
+redis
+pydantic
+httpx
+python-dotenv
+gigachat

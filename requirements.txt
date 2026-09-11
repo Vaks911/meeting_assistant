@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+websockets
+confluent-kafka
+sqlalchemy
+psycopg2-binary
+redis
+faster-whisper
+pydantic
+httpx
+python-dotenv
+gigachat
