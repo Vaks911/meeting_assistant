@@ -2,6 +2,17 @@
 
 Production-ready сервис для **автоматической транскрипции и суммаризации встреч** с извлечением action items. Асинхронная обработка через **Apache Kafka**, real-time обновления клиенту через **WebSocket**, саммари и задачи формирует **LLM GigaChat** в режиме **agentic pipeline с function calling**.
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Apache%20Kafka-231F20?style=for-the-badge&logo=apachekafka&logoColor=white" alt="Kafka">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white" alt="Redis">
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/Whisper-Faster--Whisper-FF6B00?style=for-the-badge" alt="Faster-Whisper">
+  <img src="https://img.shields.io/badge/GigaChat-Function%20Calling-6A5ACD?style=for-the-badge" alt="GigaChat">
+</p>
+
 ---
 
 ## ✨ Возможности
@@ -18,7 +29,17 @@ Production-ready сервис для **автоматической транск
 
 ---
 
-## 🏗 Архитектура
+## 🎯 Для кого этот проект
+
+- **Продуктовые команды** — автоматизация протоколов встреч и контроль action items
+- **HR / рекрутинг** — интервью → структурированные заметки
+- **Sales** — созвоны с клиентами → CRM без ручного ввода
+- **Юристы и консультанты** — длинные переговоры → краткое саммари за минуту
+- **Разработчики** — наглядный пример event-driven архитектуры и agentic LLM с Function Calling
+
+---
+
+##  Архитектура
 
 ```mermaid
 flowchart LR
@@ -197,6 +218,26 @@ python test_ws.py test_audio.mp3
 {"status": "summarizing", "progress": 70}
 {"status": "done", "summary": "...", "key_points": [...], "action_items": [...]}
 ```
+
+### Пример реального ответа GigaChat
+Итоговое сообщение `done`, которое клиент получает по WebSocket:
+
+```json
+{
+  "status": "done",
+  "summary": "Встреча прошла в напряжённой атмосфере: участники обсудили соответствие действий политикам компании и распределили задачи на следующую неделю.",
+  "key_points": [
+    "Обсуждалось соответствие текущих действий политикам компании",
+    "Назначены ответственные за реализацию поставленных задач"
+  ],
+  "action_items": [
+    { "task": "Проверить отчёт по итогам встречи", "assignee": "не указан", "deadline": "не указан" },
+    { "task": "Оформить документацию и согласовать с командой", "assignee": "не указан", "deadline": "не указан" }
+  ]
+}
+```
+
+> `assignee`/`deadline` равны `не указан`, когда модель не нашла ответственного и срок в тексте встречи.
 
 ---
 
